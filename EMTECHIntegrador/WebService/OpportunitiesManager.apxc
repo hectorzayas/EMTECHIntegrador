@@ -1,0 +1,73 @@
+@RestResource(urlMapping='/Opportunities/*')
+global with sharing class OpportunitiesManager {
+    
+    public with sharing class PostjsonWrap{
+        public List<InnerjsonWrap> opportunities;
+        public Integer elementosEnviados;
+    }
+    
+    public with sharing class InnerjsonWrap{
+        public String opportunityName;
+        public String opportunityId;
+        public String closeDate;
+        public Decimal amount;
+        public String accountName;
+    }
+    
+    @HttpPost
+    global static String createOpportunity() {
+        //RestContext.response.addHeader('Content-Type', 'application/json');
+        RestRequest request = RestContext.request;
+        System.debug('El body del request es: ' + request.requestBody.toString());
+        try {
+            PostjsonWrap req = (PostjsonWrap) System.JSON.deserialize(request.requestBody.toString(), PostjsonWrap.class);
+            
+            List<Opportunity> oppsToUpsert = new List<Opportunity>();
+            
+            for(InnerjsonWrap ijw : req.opportunities) {
+                System.debug('Los datos del innerWrapper son: ');
+                System.debug(ijw.opportunityName);
+                System.debug(ijw.opportunityId);
+                System.debug(ijw.closeDate);
+                System.debug(ijw.amount);
+                System.debug(ijw.accountName);
+            }
+            if (req.opportunities.size() > 0){
+                List<Opportunity> existingOpps = [SELECT Id, oldId__c FROM Opportunity];
+                
+                Map<String, Opportunity> oppsMap = new Map<String, Opportunity>();
+                for(Opportunity opp : existingOpps){
+                    oppsMap.put(opp.oldId__c, opp);
+                }
+                
+                for(InnerjsonWrap ijw : req.opportunities) {  
+                    if(!oppsMap.containsKey(ijw.opportunityId)){
+                        Opportunity opp = new Opportunity(
+                            oldAccount__c = ijw.accountName,
+                            Name = ijw.opportunityName,
+                            oldId__c =  ijw.opportunityId,
+                            CloseDate = Date.valueOf(ijw.closeDate),
+                            Amount = ijw.amount,
+                            StageName = 'Closed Won'
+                        );
+                        oppsToUpsert.add(opp);
+                    }
+                    else {
+                        Opportunity oppToUpdate = oppsMap.get(ijw.opportunityId);
+                        oppToUpdate.oldAccount__c = ijw.accountName;
+                        oppToUpdate.Name = ijw.opportunityName;
+                        oppToUpdate.CloseDate = Date.valueOf(ijw.closeDate);
+                        oppToUpdate.Amount = ijw.amount;
+                        oppToUpdate.StageName = 'Closed Won';
+                        
+                        oppsToUpsert.add(oppToUpdate);
+                    }
+                }
+                upsert oppsToUpsert;
+            }
+        } catch (Exception e) {
+            return ('Error' + e);
+        }
+        return 'OK';
+    }
+}
