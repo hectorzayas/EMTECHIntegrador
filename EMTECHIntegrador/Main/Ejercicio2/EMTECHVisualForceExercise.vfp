@@ -1,0 +1,18 @@
+<apex:page controller="OpportunityController" cache="true" contentType="{!IF(isExport = true, 'application/vnd.ms-excel#Oportunidades_Cerradas_Ganadas.xls', '')}">
+    <apex:form >
+        <apex:pageBlock title="Oportunidades Cerradas Ganadas" id="opportunities_list">
+            
+            <apex:commandButton id="button" value="Descargar Excel" action="{!getExport}"/>
+            
+            <apex:pageBlockTable value="{! opportunities }" var="opp">
+                <apex:column headerValue="Opportunity Name"><apex:outputLink value="{!URLFOR($Page.EMTECHOpportunityPDF, null, [id=opp.Id])}" target="_blank">{!opp.Name}</apex:outputLink></apex:column>
+                <apex:column value="{!opp.Account.Name}"/>
+                <apex:column value="{!opp.Amount}"/>
+                <apex:column value="{!opp.CloseDate}"/>
+                <apex:column value="{!opp.StageName}"/>
+                <apex:column value="{!opp.Type}"/>
+            </apex:pageBlockTable>
+            
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>
