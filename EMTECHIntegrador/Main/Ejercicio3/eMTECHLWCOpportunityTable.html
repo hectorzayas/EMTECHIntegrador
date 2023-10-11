@@ -1,0 +1,12 @@
+<template>
+    <lightning-card title="Oportunidades de la Cuenta" column-widths-mode="auto" icon-name="standard:opportunity">
+        <lightning-datatable
+            if:true={opportunitiesData}
+            key-field="id"
+            data={opportunitiesData}
+            columns={opportunityColumns}
+            hide-checkbox-column
+            onrowaction={handleRowAction}>
+        </lightning-datatable>
+    </lightning-card>
+</template>
