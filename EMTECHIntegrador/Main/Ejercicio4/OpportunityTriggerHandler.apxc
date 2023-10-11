@@ -1,0 +1,38 @@
+public with sharing class OpportunityTriggerHandler {
+    public static void handleAfterUpdate(List<Opportunity> newOpportunityList, List<Opportunity> oldOpportunityList) {
+        List<Id> oppsIds = new List<Id>();
+        Map<String,Set<Id>> setToSend = new Map<String,Set<Id>>();
+        // Pensar en un Update de Contacts por Batch.
+        for(Integer i=0; i<newOpportunityList.size(); i++){
+            if((oldOpportunityList[i].StageName != newOpportunityList[i].StageName) && newOpportunityList[i].StageName == 'Closed Won'){
+                oppsIds.add(newOpportunityList[i].Id);
+            }
+        }
+        
+        if(oppsIds.size() > 0){
+            List<Opportunity> oppsToUpdate = [SELECT Id, Name, CloseDate, Amount, Account.Name, FormattedCloseDate__c FROM Opportunity WHERE Id IN :oppsIds];
+            Set<Id> oppsIdToUpdate = new Set<Id>();
+
+            List<OpportunityWrapper.InnerjsonWrap> oppsToCreate = new List<OpportunityWrapper.InnerjsonWrap>();
+            for(Opportunity opp : oppsToUpdate) {
+                OpportunityWrapper.InnerjsonWrap oppToCreate = new OpportunityWrapper.InnerjsonWrap();
+                oppToCreate.opportunityName = opp.Name;
+                oppToCreate.opportunityId = opp.Id;
+                oppToCreate.closeDate = opp.FormattedCloseDate__c;
+                oppToCreate.amount = opp.Amount;
+                oppToCreate.accountName = opp.Account.Name;
+
+                oppsIdToUpdate.add(opp.Id);
+                oppsToCreate.add(oppToCreate);
+            }
+
+            OpportunityWrapper.PostjsonWrap oppList = new OpportunityWrapper.PostjsonWrap();
+            oppList.elementosEnviados = oppsToCreate.size();
+            oppList.opportunities = oppsToCreate;
+            
+            String strJSON = JSON.serialize(oppList);
+            
+            OpportunityCallout.makeOpportunityPOSTCallout(strJSON, oppsIdToUpdate);
+        }
+    }
+}
