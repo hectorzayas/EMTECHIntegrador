@@ -1,0 +1,50 @@
+@isTest
+global class OpportunityCalloutMock implements HTTPCalloutMock{
+    private final Errors error;
+    public Enum Errors {CODE400, CODE200}
+    
+    public OpportunityCalloutMock(Errors error){
+        this.error = error;
+    }
+    
+    global HTTPResponse respond(HTTPRequest req) {
+        System.assertEquals('POST', req.getMethod());
+        HttpResponse res = new HTTPResponse();
+        if (this.error == Errors.CODE200) {
+            if(req.getEndpoint().endsWith('oauth2/token')) {
+                res.setHeader('Content-Type', 'application/json');
+                res.setBody('{"access_token": "xxx-xxx-xxx","instance_url": "https://empathetic-wolf-6ibul7-dev-ed.trailblaze.my.salesforce.com","id": "https://login.salesforce.com/id/00DHp000002LsmLMAS/005Hp00000hShbNIAS","token_type": "Bearer","issued_at": "1696989285049","signature": "/TCImWDKOX3ps7G8OtN+3SsgeV6i0zobS7K8tE4m/tA="}');
+                res.setStatusCode(200);
+                
+                return res;
+            }
+            else if(req.getEndpoint().endsWith('services/apexrest/Opportunities')) {
+                res.setHeader('Content-Type', 'application/json');
+                res.setBody('OK');
+                res.setStatusCode(200);
+                
+                return res;
+            }
+        }
+        
+        if (this.error == Errors.CODE400) {
+            if(req.getEndpoint().endsWith('oauth2/token')) {
+                res.setHeader('Content-Type', 'application/json');
+                res.setBody('{"access_token": "xxx-xxx-xxx","instance_url": "https://empathetic-wolf-6ibul7-dev-ed.trailblaze.my.salesforce.com","id": "https://login.salesforce.com/id/00DHp000002LsmLMAS/005Hp00000hShbNIAS","token_type": "Bearer","issued_at": "1696989285049","signature": "/TCImWDKOX3ps7G8OtN+3SsgeV6i0zobS7K8tE4m/tA="}');
+                res.setStatusCode(200);
+                
+                return res;
+            }
+            else if(req.getEndpoint().endsWith('services/apexrest/Opportunities')) {
+                res.setHeader('Content-Type', 'application/json');
+                res.setBody('Error');
+                res.setStatusCode(400);
+                
+                return res;
+            }
+        }
+        
+        return res;
+    }
+    
+}
