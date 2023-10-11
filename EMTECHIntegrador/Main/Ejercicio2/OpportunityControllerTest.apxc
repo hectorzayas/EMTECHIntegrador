@@ -1,0 +1,40 @@
+@isTest
+private class OpportunityControllerTest {
+    @isTest static void TestGetOpportunities(){
+        // Test Data Setup
+        Test.loadData(Account.sobjectType, 'triggerTestAccountAccounts');
+        Test.loadData(Opportunity.sobjectType, 'triggerTestAccountOpportunities');
+                
+        OpportunityController opc = new OpportunityController();
+		List<Opportunity> opcResults = opc.getOpportunities();
+        
+        System.assertEquals(1, opcResults.size(), 'Unicamente 1 oportunidad esta en Stage Closed Won');
+    }
+    
+    @isTest static void TestPageReferenceGetExport(){
+        // Test Data Setup
+        OpportunityController opc = new OpportunityController();
+		PageReference pageRef = opc.getExport();
+        
+        System.assertEquals(null, pageRef, 'Return Null');
+    }
+    
+    @isTest static void TestGetOpportunitiesLWC(){
+        // Test Data Setup
+        List<sObject> ls = Test.loadData(Account.sobjectType, 'triggerTestAccountAccounts');
+        Test.loadData(Opportunity.sobjectType, 'triggerTestAccountOpportunities');
+		System.assert(ls.size() == 4);
+        
+        Account acc1 = (Account)ls[0];
+        Id acc1Id = acc1.Id;
+        Account acc2 = (Account)ls[1];
+        Id acc2Id = acc2.Id;
+        
+		List<Opportunity> opcResults1 = OpportunityController.getOpportunitiesLWC(acc1Id);
+        System.assertEquals(1, opcResults1.size(), 'Unicamente 1 oportunidad esta en Stage Closed Won/Closed Lost');
+        
+        List<Opportunity> opcResults2 = OpportunityController.getOpportunitiesLWC(acc2Id);
+        System.assertEquals(1, opcResults2.size(), 'Unicamente 1 oportunidad esta en Stage Closed Won/Closed Lost');
+
+    }
+}
