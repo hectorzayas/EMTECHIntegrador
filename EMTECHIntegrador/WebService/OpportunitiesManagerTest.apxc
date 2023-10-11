@@ -1,0 +1,122 @@
+@isTest
+private class OpportunitiesManagerTest {
+    @isTest
+    static void testCreateOpportunityNewOpps() {
+        
+        List<OpportunitiesManager.InnerjsonWrap> oppsToCreate = new List<OpportunitiesManager.InnerjsonWrap>();
+        
+        OpportunitiesManager.InnerjsonWrap opp1 = new OpportunitiesManager.InnerjsonWrap();
+        opp1.opportunityName = '0Test1';
+        opp1.opportunityId = '006f400000CA6qZA01';
+        opp1.closeDate = '2024-04-27';
+        opp1.amount = 60000;
+        opp1.accountName = 'Burlington Textiles Corp of America';
+        oppsToCreate.add(opp1);
+        
+        OpportunitiesManager.InnerjsonWrap opp2 = new OpportunitiesManager.InnerjsonWrap();
+        opp2.opportunityName = '0Test2';
+        opp2.opportunityId = '006f400000CA6qZA02';
+        opp2.closeDate = '2024-04-27';
+        opp2.amount = 800000;
+        opp2.accountName = 'Burlington Textiles Corp of America';
+        oppsToCreate.add(opp2);
+        
+        OpportunitiesManager.PostjsonWrap oppList = new OpportunitiesManager.PostjsonWrap();
+        oppList.elementosEnviados = oppsToCreate.size();
+        oppList.opportunities = oppsToCreate;
+        
+        String strJSON = JSON.serialize(oppList);
+        
+        test.startTest();
+        RestRequest request = new RestRequest();
+        request.requestUri ='https://empathetic-wolf-6ibul7-dev-ed.trailblaze.my.salesforce.com/services/apexrest/Opportunities';
+        request.httpMethod = 'POST';
+        request.requestBody = Blob.valueof(strJSON);
+        request.addHeader('Content-Type', 'application/json');
+        RestContext.request = request;
+        
+        String response = OpportunitiesManager.createOpportunity();
+        test.stopTest();
+        
+        List<Opportunity> oppsInDatabase = [SELECT Id, Name FROM Opportunity];
+        System.assertEquals('OK', response);
+        System.assertEquals(oppsToCreate.size(), oppsInDatabase.size());
+    }
+    
+    @isTest
+    static void testCreateOpportunityExistingOppAndAcc() {
+        List<OpportunitiesManager.InnerjsonWrap> oppsToCreate = new List<OpportunitiesManager.InnerjsonWrap>();
+        
+        Account existingAcc = new Account(
+            Name = 'Burlington Textiles Corp of America'
+        );
+        
+        insert existingAcc;
+        
+        Opportunity existingOpp = new Opportunity(
+            oldId__c = '006f400000CA6qZA01',
+            Name = '0Test1',
+            CloseDate = Date.valueOf('2024-04-27'),
+            StageName = 'Closed Won',
+            Amount = 60000,
+            AccountId = existingAcc.Id
+        );
+        
+        insert existingOpp;
+        
+        OpportunitiesManager.InnerjsonWrap opp1 = new OpportunitiesManager.InnerjsonWrap();
+        opp1.opportunityName = '0Test1';
+        opp1.opportunityId = '006f400000CA6qZA01';
+        opp1.closeDate = '2024-04-27';
+        opp1.amount = 60000;
+        opp1.accountName = 'Burlington Textiles Corp of America';
+        oppsToCreate.add(opp1);
+        
+        OpportunitiesManager.InnerjsonWrap opp2 = new OpportunitiesManager.InnerjsonWrap();
+        opp2.opportunityName = '0Test2';
+        opp2.opportunityId = '006f400000CA6qZA02';
+        opp2.closeDate = '2024-04-27';
+        opp2.amount = 800000;
+        opp2.accountName = 'Burlington Textiles Corp of America';
+        oppsToCreate.add(opp2);
+        
+        OpportunitiesManager.PostjsonWrap oppList = new OpportunitiesManager.PostjsonWrap();
+        oppList.elementosEnviados = oppsToCreate.size();
+        oppList.opportunities = oppsToCreate;
+        
+        String strJSON = JSON.serialize(oppList);
+        
+        test.startTest();
+        RestRequest request = new RestRequest();
+        request.requestUri ='https://empathetic-wolf-6ibul7-dev-ed.trailblaze.my.salesforce.com/services/apexrest/Opportunities';
+        request.httpMethod = 'POST';
+        request.requestBody = Blob.valueof(strJSON);
+        request.addHeader('Content-Type', 'application/json');
+        RestContext.request = request;
+        
+        String response = OpportunitiesManager.createOpportunity();
+        test.stopTest();
+        
+        List<Opportunity> oppsInDatabase = [SELECT Id, Name FROM Opportunity];
+        System.assertEquals('OK', response);
+        System.assertEquals(oppsToCreate.size(), oppsInDatabase.size());
+    }
+    
+    @isTest
+    static void testCreateOpportunityError() {
+        
+        test.startTest();
+        RestRequest request = new RestRequest();
+        request.requestUri ='https://empathetic-wolf-6ibul7-dev-ed.trailblaze.my.salesforce.com/services/apexrest/Opportunities';
+        request.httpMethod = 'POST';
+        request.requestBody = Blob.valueof('Null []');
+        request.addHeader('Content-Type', 'application/json');
+        RestContext.request = request;
+        
+        String response = OpportunitiesManager.createOpportunity();
+        test.stopTest();
+        
+        List<Opportunity> oppsInDatabase = [SELECT Id, Name FROM Opportunity];
+        System.AssertEquals(response.contains('Error'), true);
+    }
+}
