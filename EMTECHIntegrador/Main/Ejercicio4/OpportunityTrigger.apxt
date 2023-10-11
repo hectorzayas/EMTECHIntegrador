@@ -1,0 +1,8 @@
+trigger OpportunityTrigger on Opportunity (after update) {
+    
+    switch on Trigger.operationType {
+        when  AFTER_UPDATE{
+            OpportunityTriggerHandler.handleAfterUpdate(Trigger.new, Trigger.old);
+        }
+    }
+}
