@@ -1,0 +1,62 @@
+public with sharing class OpportunityCallout {
+
+        @future(callout=true)
+        public static void makeOpportunityPOSTCallout(String body, Set<Id> oppsIdToUpdate) {
+            // <<-- Get Bearer Key -->>
+
+            HttpRequest tokenRequest = new HttpRequest();
+            tokenRequest.setMethod('POST');
+            tokenRequest.setHeader('Content-Type','application/x-www-form-urlencoded');
+            tokenRequest.setEndpoint('https://empathetic-wolf-6ibul7-dev-ed.trailblaze.my.salesforce.com/services/oauth2/token');
+            tokenRequest.setBody('grant_type=password' + 
+                        '&client_id=3MVG9Xl3BC6VHB.bymof1pOmAV18Sd4FqAvgImbgpeaXq_te8Fh0grujXzX1LMp95STKrNFwXotpuj1Y75ren' + 
+                        '&client_secret=5465567566EADE20619502B2441A5B65E674624292DD3D4AC6911A8F60E6A0AC' + 
+                        '&username=chakra.zay@empathetic-wolf-6ibul7.com' + 
+                        '&password=MyEMTECHWebServiceOrg.31DQtLM03rivue6exXc3pBx3DFf');
+            
+            Http httpToken = new Http();
+            HTTPResponse tokenResponse = httpToken.send(tokenRequest);
+            
+            System.debug('<<-- Start Bearer Key Data -->>');
+            System.debug('Body ' + tokenResponse.getBody());
+            System.debug('Status ' + tokenResponse.getStatus());
+            System.debug('Status code ' + tokenResponse.getStatusCode());
+            System.debug('<<-- End Bearer Key Data -->>');
+            
+            String strResponse = tokenResponse.getBody();
+            Map<String,Object> newMap = (Map<String, Object>)JSON.deserializeUntyped(strResponse);
+            //String tkn = (List<Object>) newMap.get('value');
+            string tkn = String.valueOf(newMap.get('access_token'));
+            string tokenValue64 = EncodingUtil.base64Encode(Blob.valueOf(tkn));
+            //System.debug('My token: ' + tokenValue64);
+
+            // <<-- End Bearer Key -->>
+
+            Http http = new Http();
+            HttpRequest request = new HttpRequest();
+            request.setEndpoint('https://empathetic-wolf-6ibul7-dev-ed.trailblaze.my.salesforce.com/services/apexrest/Opportunities');
+            request.setMethod('POST');
+            request.setHeader('Content-Type', 'application/json;charset=UTF-8');
+            request.setHeader('Authorization', 'Bearer ' + tkn);
+            request.setBody(body);
+            HttpResponse response = http.send(request);
+
+            System.debug('My response: ' + response);
+            if(response.getStatusCode() != 200) {
+                System.debug('The status code returned was not expected: ' + response.getStatusCode() + ' ' + response.getStatus());
+                List<Opportunity> oppsToUpdate = [SELECT Id, SentStatus__c FROM Opportunity WHERE Id IN :oppsIdToUpdate];
+                for (Opportunity opp : oppsToUpdate) {
+                    opp.SentStatus__c = 'Reenviar';
+                }
+                update oppsToUpdate;
+
+            } else {
+                System.debug(response.getBody());
+                List<Opportunity> oppsToUpdate = [SELECT Id, SentStatus__c FROM Opportunity WHERE Id IN :oppsIdToUpdate];
+                for (Opportunity opp : oppsToUpdate) {
+                    opp.SentStatus__c = 'Enviado';
+                }
+                update oppsToUpdate;
+            }
+        }
+}
