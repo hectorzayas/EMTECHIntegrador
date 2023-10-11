@@ -1,0 +1,15 @@
+global with sharing class OpportunityWrapper {
+    
+    public with sharing class PostjsonWrap{
+        public List<InnerjsonWrap> opportunities;
+        public Integer elementosEnviados;
+    }
+    
+    public with sharing class InnerjsonWrap{
+        public String opportunityName;
+        public String opportunityId;
+        public String closeDate;
+        public Decimal amount;
+        public String accountName;
+    }
+}
