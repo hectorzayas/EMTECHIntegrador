@@ -1,0 +1,53 @@
+@isTest
+private class AccountTriggerTest {   
+    @isTest static void TestUpdateAccount(){
+        // Test Data Setup
+        Test.loadData(Account.sobjectType, 'triggerTestAccountAccounts');
+        Test.loadData(Contact.sobjectType, 'triggerTestAccountContacts');
+        Test.loadData(Opportunity.sobjectType, 'triggerTestAccountOpportunities');
+        Test.loadData(Ex_cliente__c.sobjectType, 'triggerTestAccountExClientes');
+        
+        List<Account> accsToVerify = [SELECT Id, Activa__c, (SELECT Id FROM Opportunities WHERE (StageName NOT IN ('Closed Won', 'Closed Lost'))), (SELECT Id FROM Contacts WHERE (Rol__c IN ('Influyente'))) FROM Account];
+        
+        List<Id> accountIds = new List<Id>();
+        List<Opportunity> oppsToVerify = new List<Opportunity>();
+        List<Contact> contsToVerify = new List<Contact>();
+        
+        for(Account acc : accsToVerify){
+            accountIds.add(acc.Id);
+            oppsToVerify.addAll(acc.Opportunities);
+            contsToVerify.addAll(acc.Contacts);
+        }
+        
+        // Perform Test
+        test.startTest();
+        for(Account acc : accsToVerify){
+            acc.Activa__c = 'No';
+        }
+        update accsToVerify;
+        test.stopTest();
+        
+        // Verify
+        // Opportunity Update Verify
+        List<Opportunity> oppsToVerify2 = [SELECT Id, Name, AccountId, StageName, Description FROM Opportunity WHERE Id IN :oppsToVerify];
+        for(Opportunity opp : oppsToVerify2){
+			System.assertEquals('Closed Lost', opp.StageName, 'Todas las oportunidades deberían estar en Closed Lost');
+            System.assertEquals('Cerrada por Cuenta Inactiva.', opp.Description, 'Todas las oportunidades deberían tener actualizada la Descripción');
+        }
+        
+        // Ex_cliente__c Insert Verify
+        List<Ex_cliente__c> contsToVerify2 = [SELECT Id, Name, Nombre__c, Contacto__c, Generado_automaticamente__c, Rol__c FROM Ex_cliente__c WHERE Contacto__c IN :contsToVerify];
+        System.assertEquals(contsToVerify.size(), contsToVerify2.size(), 'Se han creado satisfactoriamente los Ex-Clientes desde los Clientes sin Cuenta Activa');
+        
+        List<Id> contsIdsToVerify = new List<Id>();
+        for(Contact cont : contsToVerify){
+            contsIdsToVerify.add(cont.Id);
+        } 
+        
+        for(Ex_cliente__c excli : contsToVerify2){
+            System.assertEquals(True, excli.Generado_automaticamente__c, 'Todos los ex-clientes son generados automáticamente');
+            System.assertEquals('Influyente', excli.Rol__c, 'Todos los ex-clientes tienen rol Influyente');
+            System.assertEquals(True, contsIdsToVerify.contains(excli.Contacto__c), 'Todos los ex-clientes existen en la lista de Clientes Influyentes');
+        }
+    }
+}
