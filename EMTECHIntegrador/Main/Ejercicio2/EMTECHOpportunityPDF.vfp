@@ -1,0 +1,78 @@
+<apex:page standardController="Opportunity" applyHtmlTag="false" showHeader="false" renderAs="PDF">
+    <html>
+        <head>
+            <style>
+                * {
+                box-sizing: border-box;
+                }
+                
+                .heading {
+                font-weigh: bold;
+                }
+                
+                .heading--main {
+                font-size: 36px;
+                }
+                
+                .heading--sub {
+                font-size: 21px;
+                }
+                
+                .box--full {
+                float: left;
+                width: 100%
+                }
+                
+                .table {
+                border-collapse: collapse;
+                margin-top:25px;
+                width: 100%;
+                }
+                
+                th {
+                background-color: #92d5f0;
+                font-align: left;
+                text-align: center;
+                font-size: 14px;
+                font-weight: bold;
+                padding: 5px;
+                width: 18%;
+                }
+                
+                td {
+                font-align: left;
+                font-size: 13px;
+                padding: 5px;
+                text-align: center;
+                }
+
+            </style>
+        </head>
+        <body>
+            <center>
+                <h1 class="heading heading--main">Opportunity Summary</h1>
+            </center>
+            <div class="box--full">
+                <h2 class="heading heading--sub">Details</h2>
+                <table>
+                    <tr>
+                        <th>Opportunity Name</th>
+                        <th>Account Name</th>
+                        <th>Amount</th>
+                        <th>Close Date</th>
+                        <th>Stage</th>
+                        <th>Type</th>
+                    </tr>
+                    <tr>
+                        <td>{! Opportunity.Name }</td>
+                        <td>{! Opportunity.Account.Name }</td>
+                        <td>{! Opportunity.Amount }</td>
+                        <td>{! Opportunity.CloseDate }</td>
+                        <td>{! Opportunity.StageName }</td>
+                        <td>{! Opportunity.Type }</td>
+                    </tr>
+                </table>
+            </div>
+        </body>
+    </html>
+</apex:page>
