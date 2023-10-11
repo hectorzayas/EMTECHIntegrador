@@ -1,0 +1,62 @@
+@isTest
+private class OpportunityTriggerHandlerTest {
+    @isTest
+    static void TestOpportunityTriggerPositive() {
+        Test.loadData(Account.sobjectType, 'triggerTestAccountAccounts');
+        Test.loadData(Contact.sobjectType, 'triggerTestAccountContacts');
+        Test.loadData(Opportunity.sobjectType, 'triggerTestAccountOpportunities');
+        
+        List<Opportunity> oppsToUpdate = [SELECT Id, Name, CloseDate, Amount, AccountId, FormattedCloseDate__c, StageName, SentStatus__c FROM Opportunity WHERE StageName NOT IN ('Closed Lost', 'Closed Won')];
+        System.assertEquals(4, oppsToUpdate.size());
+        
+        List<Id> oppsIdToCheck = new List<Id>();
+        for (Opportunity opp : oppsToUpdate) {
+            oppsIdToCheck.add(opp.Id);
+        }
+        
+        test.StartTest();
+        Test.setMock(HttpCalloutMock.class, new OpportunityCalloutMock(OpportunityCalloutMock.Errors.CODE200));
+        for (Opportunity opp : oppsToUpdate) {
+            opp.StageName = 'Closed Won';
+        }
+        update oppsToUpdate;
+        test.StopTest();
+        
+        // Data Verification
+        List<Opportunity> oppsToVerify = [SELECT Id, Name, SentStatus__c FROM Opportunity WHERE Id IN :oppsIdToCheck ORDER BY Name];
+        for(Opportunity opp : oppsToVerify) {
+            System.assertEquals('Enviado', opp.SentStatus__c);
+        }
+        
+    }
+    
+    @isTest
+    static void TestOpportunityTriggerNegative() {
+        Test.loadData(Account.sobjectType, 'triggerTestAccountAccounts');
+        Test.loadData(Contact.sobjectType, 'triggerTestAccountContacts');
+        Test.loadData(Opportunity.sobjectType, 'triggerTestAccountOpportunities');
+        
+        List<Opportunity> oppsToUpdate = [SELECT Id, Name, CloseDate, Amount, AccountId, FormattedCloseDate__c, StageName, SentStatus__c FROM Opportunity WHERE StageName NOT IN ('Closed Lost', 'Closed Won')];
+        System.assertEquals(4, oppsToUpdate.size());
+        
+        List<Id> oppsIdToCheck = new List<Id>();
+        for (Opportunity opp : oppsToUpdate) {
+            oppsIdToCheck.add(opp.Id);
+        }
+        
+        test.StartTest();
+        Test.setMock(HttpCalloutMock.class, new OpportunityCalloutMock(OpportunityCalloutMock.Errors.CODE400));
+        for (Opportunity opp : oppsToUpdate) {
+            opp.StageName = 'Closed Won';
+        }
+        update oppsToUpdate;
+        test.StopTest();
+        
+        // Data Verification
+        List<Opportunity> oppsToVerify = [SELECT Id, Name, SentStatus__c FROM Opportunity WHERE Id IN :oppsIdToCheck];
+        for(Opportunity opp : oppsToVerify) {
+            System.assertEquals('Reenviar', opp.SentStatus__c);
+        }
+        
+    }
+}
