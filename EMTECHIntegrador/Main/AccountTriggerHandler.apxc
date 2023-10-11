@@ -1,0 +1,66 @@
+public with sharing class AccountTriggerHandler {
+
+    public static void handleAfterUpdate(List<Account> newAccountList, List<Account> oldAccountList) {
+        List<Id> accountIds = new List<Id>();
+
+        List<Opportunity> oppsToUpdate = new List<Opportunity>();
+        List<Contact> contsToUpdate = new List<Contact>();
+
+        // Pensar en un Update de Contacts por Batch.
+        for(Integer i=0; i<newAccountList.size(); i++){
+            // Ejecutar Trigger únicamente si el campo Activa__c tuvo un Update a No.
+            if((oldAccountList[i].Activa__c != newAccountList[i].Activa__c) && newAccountList[i].Activa__c == 'No'){
+                accountIds.add(newAccountList[i].Id);
+            }
+        }
+
+        // Si existen cuentas para Actualizar, buscar todas las oportunidades relacionadas a esta cuenta
+        // cuya Etapa de Oportunidad no sea igual a "cerrada ganada" o "cerrada perdida" (Closed Lost o Closed Won)
+        if(accountIds.size() > 0){
+
+            List<Account> accsToUpdate = [SELECT Id, Name, (SELECT Name, AccountId, StageName FROM Opportunities WHERE (StageName NOT IN ('Closed Won', 'Closed Lost'))), (SELECT Id, Name, Rol__c FROM Contacts WHERE (Rol__c IN ('Influyente'))) FROM Account WHERE (Id IN :accountIds)];
+            // Agregar las Oportunidades y Contactos para Actualizar
+            for(Account acc : accsToUpdate){
+                oppsToUpdate.addAll(acc.Opportunities);
+                contsToUpdate.addAll(acc.Contacts);
+            }
+
+            // Si existen Opportunities, actualizar sus campos
+            if (oppsToUpdate.size() > 0) {
+                for(Opportunity opp : oppsToUpdate){
+                    opp.StageName = 'Closed Lost';
+                    opp.Description = 'Cerrada por Cuenta Inactiva.';
+                }
+                update oppsToUpdate;
+            }
+
+            // Si existen Contacts, insertar registros Ex_cliente__c
+            if (contsToUpdate.size() > 0) {
+                List<Ex_cliente__c> exclienteListToInsert = new List<Ex_cliente__c>();
+
+                List<Ex_cliente__c> exclienteInDataBase = [SELECT Id, Name, Contacto__c FROM Ex_cliente__c];
+                List<Id> exclienteContactsIds = new List<Id>();
+
+                for (Ex_cliente__c excDB : exclienteInDataBase){
+                    exclienteContactsIds.add(excDB.Contacto__c);
+                }
+
+                for (Contact cont : contsToUpdate) {
+                    if(!exclienteContactsIds.contains(cont.Id)){
+                        Ex_cliente__c exc = new Ex_cliente__c(Contacto__c = cont.Id,
+                                                                Generado_automaticamente__c = true,
+                                                                Name = cont.Name);
+
+                        exclienteListToInsert.add(exc);
+                    }
+                }
+
+                if (exclienteListToInsert.size() > 0) {
+                    insert exclienteListToInsert;
+                }
+            }
+
+        }
+    }
+
+}
