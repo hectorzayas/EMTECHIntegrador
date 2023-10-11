@@ -1,0 +1,38 @@
+public class OpportunityController {
+
+    public boolean isExport{get; set;}
+
+    public List<Opportunity> getOpportunities() {
+        isExport= false;
+
+        Date today = Date.today();
+        List<Opportunity> results = new List<Opportunity>();
+
+        results = [SELECT Name, Account.Name, Amount, CloseDate, StageName, Type 
+                   FROM Opportunity 
+                   WHERE StageName = 'Closed Won' AND CALENDAR_MONTH(CloseDate) = :today.month()
+                   // WHERE StageName = 'Closed Won'
+                   ORDER BY Name];
+
+        return results;
+    }
+  
+    public PageReference getExport() {
+        isExport= true;
+        return null;
+    }
+
+    @AuraEnabled(cacheable = true)
+    public static List<Opportunity> getOpportunitiesLWC(Id recordId) {
+        Date today = Date.today();
+        List<Opportunity> results = new List<Opportunity>();
+
+        results = [SELECT Name, Account.Name, Amount, CloseDate, StageName, Type 
+                   FROM Opportunity 
+                   WHERE StageName IN ('Closed Won', 'Closed Lost') AND CALENDAR_MONTH(CloseDate) = :today.month() AND AccountId = :recordId
+                   ORDER BY Name];
+
+        return results;
+    }
+  
+  }
